@@ -37,32 +37,26 @@ ui <- page_sidebar(
 )
 
 server <- function(input, output, session) {
-  output$number_shown <- renderText({
+  selected_batters <- reactive({
     batters |>
-      filter(
-        season == input$season,
-        runs >= input$minimum_runs
-      ) |>
-      nrow()
-  })
-
-  output$leading_batter <- renderText({
-    filtered <- batters |>
       filter(
         season == input$season,
         runs >= input$minimum_runs
       )
+  }, label = "selected_batters")
 
-    req(nrow(filtered) > 0)
-    filtered$striker[which.max(filtered$runs)]
+  output$number_shown <- renderText({
+    nrow(selected_batters())
+  })
+
+  output$leading_batter <- renderText({
+    selected <- selected_batters()
+    req(nrow(selected) > 0)
+    selected$striker[which.max(selected$runs)]
   })
 
   output$batters_plot <- renderPlot({
-    batters |>
-      filter(
-        season == input$season,
-        runs >= input$minimum_runs
-      ) |>
+    selected_batters() |>
       ggplot(aes(
         x = dot_percent,
         y = boundary_percent,
@@ -78,11 +72,7 @@ server <- function(input, output, session) {
   })
 
   output$batters_table <- renderTable({
-    batters |>
-      filter(
-        season == input$season,
-        runs > input$minimum_runs
-      ) |>
+    selected_batters() |>
       arrange(desc(runs)) |>
       select(striker, batting_team, runs, balls_faced) |>
       head(5)
